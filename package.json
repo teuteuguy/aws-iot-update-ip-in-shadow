@@ -1,0 +1,15 @@
+{
+  "name": "update-ip-in-aws-iot-shadow",
+  "version": "1.0.0",
+  "description": "Updates the devices IP in the AWS IoT Shadow",
+  "main": "index.js",
+  "repository": {
+    "url": "https://teuteuguy@github.com/teuteuguy/update-ip-in-aws-iot-shadow",
+    "type": "git"
+  },
+  "author": "Tim <pub@lalatte.com>",
+  "license": "MIT",
+  "dependencies": {
+    "aws-iot-device-sdk": "^1.0.14"
+  }
+}

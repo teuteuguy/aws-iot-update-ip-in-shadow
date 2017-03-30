@@ -1,0 +1,28 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Effect": "Allow",
+        "Action": "iot:Connect",
+        "Resource": "arn:aws:iot:[region]:[account]:client/clientid"
+    }, {
+        "Effect": "Allow",
+        "Action": "iot:Publish",
+        "Resource": [
+            "arn:aws:iot:[region]:[account]:topic/$aws/things/[thingName]/shadow/update"
+        ]
+    }, {
+        "Effect": "Allow",
+        "Action": [
+            "iot:Subscribe"
+        ],
+        "Resource": [
+            "arn:aws:iot:[region]:[account]:topicfilter/$aws/things/[thingName]/shadow/update/delta",
+            "arn:aws:iot:[region]:[account]:topicfilter/$aws/things/[thingName]/shadow/update/accepted",
+            "arn:aws:iot:[region]:[account]:topicfilter/$aws/things/[thingName]/shadow/update/rejected",
+            "arn:aws:iot:[region]:[account]:topicfilter/$aws/things/[thingName]/shadow/get/accepted",
+            "arn:aws:iot:[region]:[account]:topicfilter/$aws/things/[thingName]/shadow/get/rejected",
+            "arn:aws:iot:[region]:[account]:topicfilter/$aws/things/[thingName]/shadow/delete/accepted",
+            "arn:aws:iot:[region]:[account]:topicfilter/$aws/things/[thingName]/shadow/delete/rejected"
+        ]
+    }]
+}

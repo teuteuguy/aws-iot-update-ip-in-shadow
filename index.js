@@ -60,7 +60,7 @@ function refreshShadow() {
     console.log(toUpdate);
 
 
-    thingShadow.update(config.iotClientId, toUpdate);
+    thingShadow.update(config.iotThingName, toUpdate);
     // thingShadow.publish('$aws/things/' + config.iotClientId + '/shadow/update', JSON.stringify(toUpdate));
 
     setTimeout(refreshShadow, (config.updateFreq || 300) * 1000);
@@ -70,11 +70,11 @@ function refreshShadow() {
 thingShadow.on('connect', function() {
     console.log('[IOT EVENT] thingShadow.on(connect): Connection established to AWS IoT');
     console.log('[IOT EVENT] thingShadow.on(connect): Registring to thingShadow');
-    thingShadow.register(config.iotClientId, {
+    thingShadow.register(config.iotThingName, {
         persistentSubscribe: true
-    });
-
-    setTimeout(refreshShadow, (config.updateFreq || 300) * 1000);
+    }, function() {
+        setTimeout(refreshShadow, (config.updateFreq || 300) * 1000);
+    });    
 });
 
 thingShadow.on('reconnect', function() {
@@ -84,7 +84,7 @@ thingShadow.on('reconnect', function() {
 thingShadow.on('close', function() {
     console.log('[IOT EVENT] thingShadow.on(close) Connection closed');
     console.log('[IOT EVENT] thingShadow.on(close) unregistring to shadow.');
-    thingShadow.unregister(config.iotClientId);
+    thingShadow.unregister(config.iotThingName);
 });
 
 thingShadow.on('error', function(err) {

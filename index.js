@@ -4,7 +4,6 @@ const awsIot = require('aws-iot-device-sdk');
 const config = require('./config.json');
 
 const os = require('os');
-var ifaces = os.networkInterfaces();
 
 console.log('[START] Start of update-ip-in-aws-iot-shadow application');
 
@@ -31,6 +30,8 @@ var thingShadow = awsIot.thingShadow(configIoT);
 
 function getIPForInterface(interface) {
     var ip = null;
+
+    var ifaces = os.networkInterfaces();
 
     if (ifaces[interface]) {
 

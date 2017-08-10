@@ -18,85 +18,109 @@ var configIoT = {
 };
 
 var thingState = {
-    ip: null
+    ip: {}
 };
 
-console.log('[SETUP] thingShadow state initialized with:');
-console.log(thingState);
-console.log('[SETUP] Initializing IoT thingShadow with config:');
-console.log(configIoT);
+console.log('[SETUP] device state initialized with:');
+console.log(JSON.stringify(thingState, null, 2));
+console.log('[SETUP] Initializing IoT device with config:');
+console.log(JSON.stringify(configIoT, null, 2));
 
-var thingShadow = awsIot.thingShadow(configIoT);
-
-function getIPForInterface(interface) {
-    var ip = null;
+function getIPForInterfaces() {
+    var ip = {};
 
     var ifaces = os.networkInterfaces();
 
-    if (ifaces[interface]) {
-
-        ifaces[interface].forEach(function(iface) {
-            if (iface.family == 'IPv4') {
-                ip = iface.address;
-            }
-        });
-
+    for (var iface in ifaces) {
+        if (iface != 'lo0') {
+            ifaces[iface].forEach((info) => {
+                if (info.family == 'IPv4') {
+                    ip[iface] = {
+                        ip: info.address
+                    };
+                }
+            });
+        }
     }
 
     return ip;
 }
 
-function refreshShadow() {
-    // require('os').networkInterfaces().wlan0[0].address;
 
-    thingState.ip = getIPForInterface((config.interface || 'eth0'));
+thingState.ip = getIPForInterfaces();
 
-    var toUpdate = {
-        state: {
-            reported: thingState
-        }
-    };
+if (thingState.ip != {}) {
+    console.log('[RUN] IP is:', JSON.stringify(thingState.ip, null, 2));
 
-    console.log('[EVENT] refreshShadow(): Refhreshing the Shadow:');
-    console.log(toUpdate);
+    var device = awsIot.device(configIoT);
+    let getShadowClientToken = null;
 
+    device.on('connect', function() {
+        console.log('[IOT EVENT] device.on(connect): Connection established to AWS IoT');
+        console.log('[IOT EVENT] device.on(connect): Registring to device');
 
-    thingShadow.update(config.iotThingName, toUpdate);
-    // thingShadow.publish('$aws/things/' + config.iotClientId + '/shadow/update', JSON.stringify(toUpdate));
+        // In case you want to get the Shadow before doing anything. Uncomment following
+        // device.subscribe('$aws/things/pizero/shadow/get/accepted', { qos: 1 }, (err, granted) => {
+        //     if (err) {
+        //         console.error('[IOT EVENT] device.on(connect): THERE WAS AN ERROR SUBSCRIBING', JSON.stringify(err, null, 2));
+        //     } else {
+        //         console.log('[IOT EVENT] device.on(connect): Subscription:', JSON.stringify(granted, null, 2));
 
-    setTimeout(refreshShadow, (config.updateFreq || 300) * 1000);
+        //         device.publish('$aws/things/pizero/shadow/get', '', { qos: 1 }, (err) => {
+        //             if (err) {
+        //                 console.error('[IOT EVENT] device.on(connect): THERE WAS AN ERROR GETTING THE SHADOW', JSON.stringify(err, null, 2));
+        //             } else {
+        //                 console.log('[IOT EVENT] device.on(connect): Get Shadow requested');
+        //             }
+        //         });
+        //     }
+        // });
+
+        device.publish('$aws/things/pizero/shadow/update', JSON.stringify({
+            state: {
+                reported: thingState
+            }
+        }), {
+            qos: 1
+        }, (err) => {
+            if (err) {
+                console.error('[IOT EVENT] device.on(connect): THERE WAS AN ERROR', JSON.stringify(err, null, 2));
+            } else {
+                console.log('[IOT EVENT] device.on(connect): Shadow updated');
+            }
+            device.end();
+        });
+    });
+
+    device.on('reconnect', () => {
+        console.log('[IOT EVENT] device.on(reconnect) Trying to reconnect to AWS IoT');
+    });
+
+    device.on('close', () => {
+        console.log('[IOT EVENT] device.on(close) Connection closed');
+        // console.log('[IOT EVENT] device.on(close) unregistring to shadow.');
+        // device.unregister(config.iotThingName);
+    });
+
+    device.on('error', (err) => {
+        console.error('[IOT EVENT] device.on(error) error:', JSON.stringify(err, null, 2));
+        // process.exit();
+        throw new Error('[ERROR] Lets crash the node code because of this error.');
+    });
+
+    device.on('status', (thingName, stat, clientToken, stateObject) => {
+        console.log('[IOT EVENT] device.on(status): thingName:', thingName);
+        console.log('[IOT EVENT] device.on(status): stat:', stat);
+        console.log('[IOT EVENT] device.on(status): clientToken:', clientToken);
+        console.log('[IOT EVENT] device.on(status): stateObject:', stateObject);
+
+    });
+
+    device.on('message', (topic, payload) => {
+        console.log('[IOT EVENT] device.on(message): topic:', topic);
+        console.log('[IOT EVENT] device.on(message): payload:', JSON.stringify(JSON.parse(payload.toString()), null, 2));
+    });
+
+} else {
+    console.log('[RUN] No IP.');
 }
-
-
-thingShadow.on('connect', function() {
-    console.log('[IOT EVENT] thingShadow.on(connect): Connection established to AWS IoT');
-    console.log('[IOT EVENT] thingShadow.on(connect): Registring to thingShadow');
-    thingShadow.register(config.iotThingName, {
-        persistentSubscribe: true
-    }, function() {
-        setTimeout(refreshShadow, (config.updateFreq || 300) * 1000);
-    });    
-});
-
-thingShadow.on('reconnect', function() {
-    console.log('[IOT EVENT] thingShadow.on(reconnect) Trying to reconnect to AWS IoT');
-});
-
-thingShadow.on('close', function() {
-    console.log('[IOT EVENT] thingShadow.on(close) Connection closed');
-    console.log('[IOT EVENT] thingShadow.on(close) unregistring to shadow.');
-    thingShadow.unregister(config.iotThingName);
-});
-
-thingShadow.on('error', function(err) {
-    console.error('[IOT EVENT] thingShadow.on(error) error:', err);
-    // process.exit();
-    throw new Error('[ERROR] Lets crash the node code because of this error.');
-});
-
-thingShadow.on('status', function(thingName, stat, clientToken, stateObject) {
-    console.log('[IOT EVENT] thingShadow.on(status): thingName:', thingName);
-    console.log('[IOT EVENT] thingShadow.on(status): stat:', stat);
-    console.log('[IOT EVENT] thingShadow.on(status): clientToken:', clientToken);
-    console.log('[IOT EVENT] thingShadow.on(status): stateObject:', stateObject);
-});

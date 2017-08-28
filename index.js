@@ -15,6 +15,20 @@ var configIoT = {
     "region": config.iotRegion,
     "host": config.iotEndpoint,
     "reconnectPeriod": 300,
+    will: {
+        topic: config.iotThingName + '/lwt',
+        payload: JSON.stringify({
+            state: {
+                reported: {
+                    ip: {
+                        connected: false
+                    }
+                }
+            }
+        }),
+        qos: 0,
+        retain: false
+    }
 };
 
 var thingState = {
@@ -27,7 +41,9 @@ console.log('[SETUP] Initializing IoT device with config:');
 console.log(JSON.stringify(configIoT, null, 2));
 
 function getIPForInterfaces() {
-    var ip = {};
+    var ip = {
+        connected: true
+    };
 
     var ifaces = os.networkInterfaces();
 

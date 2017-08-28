@@ -27,9 +27,7 @@ console.log('[SETUP] Initializing IoT device with config:');
 console.log(JSON.stringify(configIoT, null, 2));
 
 function getIPForInterfaces() {
-    var ip = {
-        connected: true
-    };
+    var ip = {};
 
     var ifaces = os.networkInterfaces();
 

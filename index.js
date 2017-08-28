@@ -76,7 +76,7 @@ if (thingState.ip != {}) {
         //     }
         // });
 
-        device.publish('$aws/things/pizero/shadow/update', JSON.stringify({
+        device.publish('$aws/things/' + config.iotThingName + '/shadow/update', JSON.stringify({
             state: {
                 reported: thingState
             }
